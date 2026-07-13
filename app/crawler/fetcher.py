@@ -38,7 +38,7 @@ def fetch_page(url: str) -> FetchedPage:
             url=url, title=None, text="", success=False,
             error=f"HTTP {resp.status_code}",
         )
-
+    resp.encoding = resp.apparent_encoding
     html = resp.text
 
     extracted = trafilatura.extract(
