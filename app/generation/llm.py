@@ -68,12 +68,29 @@ def generate_answer(question: str, context_chunks: list[str]) -> tuple[str, list
 
     raw = response.choices[0].message.content
 
-    if "---FOLLOWUP---" in raw:
-        answer_part, followup_part = raw.split("---FOLLOWUP---", 1)
-    else:
-        answer_part, followup_part = raw, ""
+    # look for "FOLLOWUP" case-insensitively rather than requiring an
+    # exact "---FOLLOWUP---" match, since the model doesn't always
+    # reproduce the marker with perfect formatting
+    lowered = raw.lower()
+    marker_pos = lowered.find("followup")
 
-    answer = answer_part.strip()
-    follow_ups = [line.strip() for line in followup_part.strip().splitlines() if line.strip()]
+    if marker_pos != -1:
+        answer_part = raw[:marker_pos]
+        followup_part = raw[marker_pos:]
+        # strip leading junk like "FOLLOWUP---", "**FOLLOWUP:**", etc.
+        followup_part = followup_part.split("\n", 1)[-1] if "\n" in followup_part else ""
+    else:
+        answer_part = raw
+        followup_part = ""
+
+    # clean up leftover dashes/asterisks/colons at the start or end of the answer
+    answer = answer_part.strip().strip("-*: ").strip()
+
+    follow_ups = [
+        line.strip().lstrip("-*•123456789.() ").strip()
+        for line in followup_part.strip().splitlines()
+        if line.strip()
+    ]
+    follow_ups = [f for f in follow_ups if len(f) > 5]  # drop empty/junk fragments
 
     return answer, follow_ups
