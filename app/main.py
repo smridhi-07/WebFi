@@ -84,11 +84,24 @@ def list_sites():
     return {"sites": store.list_sites()}
 
 
+BROAD_QUESTION_KEYWORDS = [
+    "summarize", "summary", "overview", "everything", "all the",
+    "entire", "whole website", "whole site", "in general", "main points",
+]
+
+
+def _effective_top_k(question: str, requested_top_k: int) -> int:
+    lowered = question.lower()
+    if any(keyword in lowered for keyword in BROAD_QUESTION_KEYWORDS):
+        return max(requested_top_k, 10)
+    return requested_top_k
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     query_vec = embed_text(request.question)
-    results = store.search(query_vec, top_k=request.top_k, site_filter=request.site)
-
+    effective_top_k = _effective_top_k(request.question, request.top_k)
+    results = store.search(query_vec, top_k=effective_top_k, site_filter=request.site)
     context_chunks = [chunk.text for chunk, score in results]
     answer, follow_ups = generate_answer(request.question, context_chunks)
 
