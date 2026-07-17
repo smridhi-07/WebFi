@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from pydantic import BaseModel
-
+from app.ingestion.chunker import chunk_text, Chunk
 from app.crawler.crawler import crawl_site
 from app.ingestion.chunker import chunk_text
 from app.ingestion.embedder import embed_texts, embed_text
@@ -55,6 +55,16 @@ def add_site(request: CrawlRequest) -> CrawlResponse:
     total_chunks_added = 0
     for page in result.pages:
         chunks = chunk_text(page.text, page.url, page.title)
+        if page.links:
+            batch_size = 10
+            for i in range(0, len(page.links), batch_size):
+                batch = page.links[i:i + batch_size]
+                links_text = "Links found on this page:\n" + "\n".join(
+                    f"- {text}: {url}" for text, url in batch
+                )
+                chunks.append(
+                    Chunk(text=links_text, source_url=page.url, source_title=page.title, chunk_index=len(chunks))
+                )
         if not chunks:
             continue
         embeddings = embed_texts([c.text for c in chunks])

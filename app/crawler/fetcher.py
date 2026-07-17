@@ -10,6 +10,8 @@ world HTML far better than hand-rolled BeautifulSoup heuristics.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 import requests
 import trafilatura
@@ -25,7 +27,19 @@ class FetchedPage:
     text: str
     success: bool
     error: str | None = None
+    links: list[tuple[str, str]] | None = None  # (link_text, url) pairs
 
+def _extract_page_links(html: str, page_url: str) -> list[tuple[str, str]]:
+    soup = BeautifulSoup(html, "html.parser")
+    links = []
+    for a in soup.find_all("a", href=True):
+        text = a.get_text(strip=True)
+        href = a["href"]
+        if not text or href.startswith(("mailto:", "javascript:", "#")):
+            continue
+        full_url = urljoin(page_url, href).split("#")[0]
+        links.append((text, full_url))
+    return links[:50]  # cap to avoid huge nav-heavy pages bloating storage
 
 def fetch_page(url: str) -> FetchedPage:
     try:
@@ -40,6 +54,7 @@ def fetch_page(url: str) -> FetchedPage:
         )
     resp.encoding = resp.apparent_encoding
     html = resp.text
+    page_links = _extract_page_links(html, url)
 
     extracted = trafilatura.extract(
         html,
@@ -70,4 +85,4 @@ def fetch_page(url: str) -> FetchedPage:
     metadata = trafilatura.extract_metadata(html)
     title = metadata.title if metadata else None
 
-    return FetchedPage(url=url, title=title, text=extracted, success=True)
+    return FetchedPage(url=url, title=title, text=extracted, success=True, links=page_links)

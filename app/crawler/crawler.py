@@ -45,9 +45,7 @@ def _load_robots(base_url: str) -> RobotFileParser:
     return rp
 
 
-def _same_domain(url: str, base_netloc: str) -> bool:
-    return urlparse(url).netloc == base_netloc
-def _same_section(url: str, base_path_prefix: str, base_netloc: str) -> bool:
+def _same_section(url: str, base_netloc: str, base_path_prefix: str) -> bool:
     parsed = urlparse(url)
     return parsed.netloc == base_netloc and parsed.path.startswith(base_path_prefix)
 
@@ -66,6 +64,8 @@ def _extract_links(html: str, page_url: str) -> list[str]:
 
 def _crawl_via_links(base_url: str, max_pages: int, robots: RobotFileParser) -> list[str]:
     base_netloc = urlparse(base_url).netloc
+    base_path = urlparse(base_url).path.rstrip("/")
+    base_path_prefix = base_path.rsplit("/", 1)[0] + "/"  # e.g. "/devops/"
     visited: set[str] = set()
     queue: list[str] = [base_url]
     discovered: list[str] = []
@@ -76,11 +76,10 @@ def _crawl_via_links(base_url: str, max_pages: int, robots: RobotFileParser) -> 
             continue
         visited.add(url)
 
-        if not _same_domain(url, base_netloc):
+        if not _same_section(url, base_netloc, base_path_prefix):
             continue
         if not robots.can_fetch(HEADERS["User-Agent"], url):
             continue
-
         try:
             resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
             time.sleep(DEFAULT_DELAY_SECONDS)
@@ -106,9 +105,16 @@ def crawl_site(base_url: str, max_pages: int = 100, single_page: bool = False) -
     if single_page:
         urls = [base_url]
     else:
-        sitemap_urls = discover_urls(base_url, max_urls=max_pages)
-        remaining = max_pages - len(sitemap_urls)
+        base_path = urlparse(base_url).path.rstrip("/")
+        base_path_prefix = base_path.rsplit("/", 1)[0] + "/"
 
+        raw_sitemap_urls = discover_urls(base_url, max_urls=max_pages * 3)  # over-fetch, we'll filter down
+        sitemap_urls = [
+            u for u in raw_sitemap_urls
+            if urlparse(u).path.startswith(base_path_prefix)
+        ][:max_pages]
+
+        remaining = max_pages - len(sitemap_urls)
         link_urls: list[str] = []
         if remaining > 0:
             link_urls = _crawl_via_links(base_url, remaining, robots)
