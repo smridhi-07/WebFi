@@ -12,6 +12,34 @@ st.set_page_config(page_title="WebFi", page_icon=None, layout="centered")
 st.markdown(
     """
     <style>
+    :root {
+        --primary-color: #4a7dfc;
+    }
+    button[kind="primary"], button[kind="secondary"] {
+        background-color: #4a7dfc !important;
+        border-color: #4a7dfc !important;
+        color: white !important;
+    }
+    .stCheckbox [data-baseweb="checkbox"] svg {
+        fill: #4a7dfc !important;
+    }
+    
+    div[data-testid="stChatMessage"] {
+        border-radius: 16px;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 0.6rem;
+    }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        background-color: #1e2a4a;
+    }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        background-color: #1a1a1a;
+    }
+    div[data-testid="stChatMessageAvatarUser"],
+    div[data-testid="stChatMessageAvatarAssistant"] {
+        display: none;
+    }
+
     .webfi-header h1 {
         font-size: 2.6rem;
         font-weight: 800;
@@ -69,7 +97,12 @@ with st.sidebar:
     max_pages = st.slider("How many pages to read (max)", min_value=1, max_value=50, value=10)
     single_page = st.checkbox(
         "Just this one page",
-        help="Turn this on to read only the exact page above. Leave it off to explore the whole site (up to the limit set by the slider)."
+        help=(
+            "ON: WebFi reads only the exact page you entered above — good for a single "
+            "article or blog post.\n\n"
+            "OFF: WebFi also follows links from that page to read related pages too — "
+            "good for a documentation hub or tutorial series with many sub-pages."
+        )
     )
 
     if st.button("Add to WebFi", type="primary"):
