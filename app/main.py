@@ -99,7 +99,7 @@ def _effective_top_k(question: str, requested_top_k: int) -> int:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    query_vec = embed_text(request.question)
+    query_vec = embed_text(request.question) 
     effective_top_k = _effective_top_k(request.question, request.top_k)
     results = store.search(query_vec, top_k=effective_top_k, site_filter=request.site)
     context_chunks = [chunk.text for chunk, score in results]
