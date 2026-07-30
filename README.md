@@ -48,8 +48,6 @@ PROJECTAI/
 ```
 ## Architecture
 
-## 🏗️ System Architecture
-
 ```text
                      INDEXING PIPELINE
 
