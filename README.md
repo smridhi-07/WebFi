@@ -46,6 +46,54 @@ PROJECTAI/
 ├── streamlit_app.py     # frontend
 └── requirements.txt
 ```
+## Architecture
+
+## 🏗️ System Architecture
+
+```text
+                     INDEXING PIPELINE
+
+                    Website URL
+                         │
+                         ▼
+        Crawler (Sitemap + Links + robots.txt)
+                         │
+                         ▼
+                 Content Cleaning
+                         │
+                         ▼
+                     Chunking
+                         │
+                         ▼
+     Sentence Transformers (Local Embeddings)
+                         │
+                         ▼
+  Local Vector Store (Embeddings + Metadata + URLs)
+
+──────────────────────────────────────────────────────────────
+
+                    QUESTION PIPELINE
+
+                   User Question
+                         │
+                         ▼
+             Site Filter (Optional)
+                         │
+                         ▼
+              Similarity Search (Top-K)
+                         │
+                         ▼
+                 Relevant Chunks
+                         │
+                         ▼
+         Groq (Llama 3.3 70B)
+                         │
+                         ▼
+                      Response
+               ├── Grounded Answer
+               ├── Source Citations
+               └── Follow-up Questions
+```
 
 ## Setup
 
